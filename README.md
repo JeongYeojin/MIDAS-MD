@@ -1,4 +1,4 @@
-# The Brightest Area in Mammography coupled with Deep Learning Feature Scores: Identifying a High-Risk Breast Cancer Subgroup through Mammography Alone 
+# AI-Powered Identification of High-Risk Breast Cancer Subgroups Using Mammography: A Multicenter Study Integrating Automated Brightest Density Measures with Deep Learning Metrics
 
 ## Create time : 2023. 09. 15
 
