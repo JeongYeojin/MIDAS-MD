@@ -32,6 +32,11 @@ def performance_metrics(y_true, y_pred):
     return [recall, specificity, precision]
     
 def eval_model(model, X_test, Y_test, thresh=0.5, visualize=True):
+
+    # Evaluate semantic segmentation model 
+    # X_test : Test input images
+    # Y_test : Test input ground truth masks 
+    # thresh : Threshold to make predicted binary mask 
     
     _, _, _, preds = model.predict(X_test)
     print("ground truth shape : ", X_test.shape) 
@@ -62,7 +67,7 @@ def eval_model(model, X_test, Y_test, thresh=0.5, visualize=True):
         np.sum(precision_list)/len(X_test)))
     
     if visualize:
-        #plot precision-recall 
+        # plot precision-recall 
         y_true = Y_test.ravel() 
         y_preds = preds.ravel() 
         precision, recall, thresholds = precision_recall_curve(y_true, y_preds)
@@ -71,5 +76,32 @@ def eval_model(model, X_test, Y_test, thresh=0.5, visualize=True):
         plt.xlabel("Recall")
         plt.ylabel("Precision") 
         plt.show() 
+        
+def predict_mask(npy_path, model_1, model_2, model_3):
+
+    # Make prediction of cumulus, altocumulus, cirrocumulus using input image
+    # npy_path : Path of numpy file to predict 
+    # model_1 : Trained semantic segmentation model using Cumulus as ground truth 
+    # model_2 : Trained semantic segmentation model using Altocumulus as ground truth 
+    # model_3 : Trained semantic segmentation model using Cirrocumulus as ground truth 
     
+    image = np.load(npy_path)
+    image = cv2.resize(image, (IMAGE_SIZE, IMAGE_SIZE))
+    image = image.reshape(-1, IMAGE_SIZE, IMAGE_SIZE, 1)
+    image = image.astype(np.float32)
+    
+    _, _, _, predicted_mask_1 = model_density_1.predict(image)
+    _, _, _, predicted_mask_2 = model_density_2.predict(image)
+    _, _, _, predicted_mask_3 = model_density_3.predict(image)
+    
+    predicted_mask_1 = (predicted_mask_1 > 0.5).astype(np.uint8)
+    predicted_mask_2 = (predicted_mask_2 > 0.5).astype(np.uint8)
+    predicted_mask_3 = (predicted_mask_3 > 0.5).astype(np.uint8)
+    
+    predicted_density_1 = predicted_mask_1[0][:, :, 0]
+    predicted_density_2 = predicted_mask_2[0][:, :, 0]
+    predicted_density_3 = predicted_mask_3[0][:, :, 0]
+
+    return predicted_density_1, predicted_density_2, predicted_density_3
+
     
