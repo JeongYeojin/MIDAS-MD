@@ -118,7 +118,7 @@ def compare_distribution(df, x, y, group_order, figsize, x_name, y_name, left_sh
     plt.show()
     
 
-def MD_fig_2(df, MD_var_1, MD_var_2, MD_var_3, DL_var, target_var, figsize, fontsize):
+def OR_table(df, MD_var_1, MD_var_2, MD_var_3, DL_var, target_var, figsize, fontsize):
 
     '''
     Function to show 3 x 3 OR tables according to tertiles of pMBD and FS 
