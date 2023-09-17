@@ -22,6 +22,11 @@ from skimage import io
 
 def gg_lastlayer(model, image_path, device=torch.device("cuda")):
 
+    if isinstance(model, nn.DataParallel):
+        model = model.module
+    
+    model = model.eval()
+
     '''
     Returns guided Grad-CAM of last convolutional layer of trained model 
 
