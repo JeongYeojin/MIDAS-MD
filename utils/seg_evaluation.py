@@ -77,7 +77,7 @@ def eval_model(model, X_test, Y_test, thresh=0.5, visualize=True):
         plt.ylabel("Precision") 
         plt.show() 
         
-def predict_mask(npy_path, model_1, model_2, model_3):
+def predict_mask(npy_path, model_1, model_2, model_3, IMAGE_SIZE):
 
     # Make prediction of cumulus, altocumulus, cirrocumulus using input image
     # npy_path : Path of numpy file to predict 
