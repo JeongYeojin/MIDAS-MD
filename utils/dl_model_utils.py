@@ -55,9 +55,12 @@ def get_loss_function(pos_weight):
     return loss_function 
         
 
-def get_dataloader(df, channel_num, image_size, batch_size):
+def get_dataloader(df, channel_num, target_var, image_col, image_size, batch_size):
 
     # In pandas DataFrame df, it has column named "split" - "train", "valid", "test"
+    # df : Pandas dataframe containing information
+    # target_var : Name of column in df correspondin to breast cancer status
+    # image_col : Name of column in df corresponding to input image (numpy array) path
     
     train_transforms = A.Compose([
             A.Resize(width=image_size, height=image_size, p=1.0),
@@ -70,13 +73,13 @@ def get_dataloader(df, channel_num, image_size, batch_size):
                 A.Resize(width=image_size, height=image_size, p=1.0),
             ])
     
-    X_train = df[df["split"] == "train"]["npy_path"].tolist()
-    X_valid = df[df["split"] == "valid"]["npy_path"].tolist()
-    X_test = df[df["split"] == "test"]["npy_path"].tolist()
+    X_train = df[df["split"] == "train"][image_col].tolist()
+    X_valid = df[df["split"] == "valid"][image_col].tolist()
+    X_test = df[df["split"] == "test"][image_col].tolist()
 
-    Y_train = df[df["split"] == "train"]["GROUP_bin"].tolist()
-    Y_valid = df[df["split"] == "valid"]["GROUP_bin"].tolist()
-    Y_test = df[df["split"] == "test"]["GROUP_bin"].tolist()
+    Y_train = df[df["split"] == "train"][target_var].tolist()
+    Y_valid = df[df["split"] == "valid"][target_var].tolist()
+    Y_test = df[df["split"] == "test"][target_var].tolist()
 
     train_ds = CustomDataset(X_train, Y_train, train_transforms, channel_num=channel_num)
     train_loader = torch.utils.data.DataLoader(train_ds, batch_size=batch_size, shuffle=True, pin_memory=torch.cuda.is_available())
@@ -240,14 +243,38 @@ def main(df, target_var, channel_num, learning_rate, metric_list, binary_thresho
     
     train(model, hist_name, model_dir, train_loader, valid_loader, metric_list, device, optimizer, loss_function, binary_threshold, max_epochs=100)
 
+def load_model(df, pth_path, target_var, channel_num, image_size, batch_size, model_dir, to_device=True):
+
+    # Load trained model
+    # pth_path : path of pth file (weights) of trained model 
+    # target_var : Name of column in df correspondin to breast cancer status
+
+    model = get_model()
     
-def test(df, pth_name, channel_num, image_size, batch_size, binary_threshold, model_dir, visualize, figsize=(8,6), fontsize=12, label_fontsize=12, legend=True):
+    device = torch.device("cuda")
+    if torch.cuda.device_count() > 1:
+        print("Using", torch.cuda.device_count(), "GPUs")
+        model = torch.nn.DataParallel(model, device_ids = [0, 1, 2]) # Change according to your GPU setting 
+    model = model.to(device)
+    
+    case_num = df[target_var].value_counts().get(1, 0)
+    control_num = df[target_var].value_counts().get(0, 0)
+    weight_positive = control_num / case_num
+    pos_weight = torch.tensor([weight_positive]).to(device)
+    
+    loss_function = get_loss_function(pos_weight)
+    loss_function.cuda()
+    
+    # Load trained model 
+    model.load_state_dict(torch.load(pth_path))
 
-    # pth_name : Name of pth file (weights) of trained model
-    # model_dir : Directory which contains saved model 
+    return model 
+    
+def test(df, pth_path, channel_num, image_size, batch_size, binary_threshold, model_dir, visualize, figsize=(8,6), fontsize=12, label_fontsize=12, legend=True):
 
+    # pth_path : Path of pth file (weights) of trained model
     _, _, _, _, _, test_loader = get_dataloader(df, channel_num=channel_num, image_size=image_size, batch_size=batch_size)
-    
+
     model = get_model()
     
     device = torch.device("cuda")
@@ -256,8 +283,8 @@ def test(df, pth_name, channel_num, image_size, batch_size, binary_threshold, mo
         model = torch.nn.DataParallel(model, device_ids = [0, 1, 2])
     model = model.to(device)
     
-    case_num = df.GROUP_bin.value_counts().get(1, 0)
-    control_num = df.GROUP_bin.value_counts().get(0, 0)
+    case_num = df[target_var]..value_counts().get(1, 0)
+    control_num = df[target_var]..value_counts().get(0, 0)
     weight_positive = control_num / case_num
     pos_weight = torch.tensor([weight_positive]).to(device)
     
@@ -265,7 +292,6 @@ def test(df, pth_name, channel_num, image_size, batch_size, binary_threshold, mo
     loss_function.cuda()
     
     # Load trained model 
-    pth_path = os.path.join(model_dir, pth_name) 
     model.load_state_dict(torch.load(pth_path))
 
     test_step = 0
@@ -329,3 +355,6 @@ def test(df, pth_name, channel_num, image_size, batch_size, binary_threshold, mo
 
         # Show the plot
         plt.show()
+
+
+    
