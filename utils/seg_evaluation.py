@@ -34,8 +34,8 @@ def performance_metrics(y_true, y_pred):
 def eval_model(model, X_test, Y_test, thresh=0.5, visualize=True):
 
     # Evaluate semantic segmentation model 
-    # X_test : Test input images
-    # Y_test : Test input ground truth masks 
+    # X_test : Test input images (in numpy array)
+    # Y_test : Test input ground truth masks (in numpy array)
     # thresh : Threshold to make predicted binary mask 
     
     _, _, _, preds = model.predict(X_test)
